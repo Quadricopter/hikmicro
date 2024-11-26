@@ -6,10 +6,9 @@ import math
 
 class Palette(IntEnum):
 
-    THE_MATRIX = 0  # Green only
-    GRAYSCALE = 1   # Grayscale
-    RAINBOW = 2     # black-blue-cyan-green-yellow-red
-    IRONBOW = 3     # black-blue-magenta-orange-yellow-white / FLIR
+    GRAYSCALE = 0   # Grayscale
+    RAINBOW = 1     # black-blue-cyan-green-yellow-red
+    IRONBOW = 2     # black-blue-magenta-orange-yellow-white / FLIR
 
 
 class Heatmap():
@@ -23,9 +22,14 @@ class Heatmap():
         self.max_temp = self.DEFAULT_MAX_TEMPERATURE
         self.set_palette(palette)
 
-    def set_palette(self, palette=Palette.RAINBOW, alpha=1):
+    def set_palette(self, palette=Palette.RAINBOW):
 
         self.color_map = []
+
+        if palette == Palette.GRAYSCALE:
+            # RGB(0, 0, 0) -> RGB(255, 255, 255)
+            for value in range(255):
+                self.color_map.append((value, value, value))
 
         if palette == Palette.RAINBOW:
             # Now 100% black
@@ -54,16 +58,6 @@ class Heatmap():
                 self.color_map.append((255, 255 - green, 0))
 
             # Now 100% red
-
-        if palette == Palette.THE_MATRIX:
-            # RGB(0, 0, 255) -> RGB(0, 255, 0)
-            for green in range(255):
-                self.color_map.append((0, green, 0))
-
-        if palette == Palette.GRAYSCALE:
-            # RGB(0, 0, 0) -> RGB(255, 255, 255)
-            for value in range(255):
-                self.color_map.append((value, value, value))
 
         if palette == Palette.IRONBOW:
             # black-blue-magenta-orange-yellow-white / FLIR

@@ -11,17 +11,6 @@ HEADER_READ_BUFFER_SIZE = 1024
 HDRI_HEADER_SIZE = 44
 
 
-# def color_map(min:float, max:float, cur:float) -> int:
-#     cur -= min
-#     max -= min
-#     col = int((cur * 255) / max)
-#     if col < 0:
-#         col = 0
-#     if col > 255:
-#         col = 255
-#     return col
-
-
 def get_header_address(jpeg_file, header):
 
     pos = -1
@@ -50,7 +39,12 @@ def main():
                     prog='HIKMICRO Toolkit',
                     description='Extract thermal data from HIKMICRO jpg file')
     parser.add_argument('-j', '--jpeg', required=True)
+    parser.add_argument('-p', '--palette', type=int, default=Palette.GRAYSCALE)
     args = parser.parse_args()
+
+    if args.palette < 0 or args.palette >= len(Palette):
+        print(f'Unsupported palette, must be in [0:{len(Palette)-1}]')
+        return 1
 
     with open(args.jpeg, mode='rb') as jpegfile:
 
@@ -78,13 +72,14 @@ def main():
         header = jpegfile.read(HDRI_HEADER_SIZE)
         hexdump.hexdump(header)
 
-        unk1a = struct.unpack('<H', header[4:6])[0]
-        unk1b = struct.unpack('<H', header[6:8])[0]
-        unk1c = struct.unpack('<f', header[4:8])[0]
-        unk1d = struct.unpack('<I', header[4:8])[0]
         width = struct.unpack('<I', header[12:16])[0]
         height = struct.unpack('<I', header[16:20])[0]
         print(f'[Header] width: {width}px, height: {height}px')
+
+        unk1a = struct.unpack('<H', header[4:6])[0]
+        unk1b = struct.unpack('<H', header[6:8])[0]
+        unk1c = struct.unpack('<I', header[4:8])[0]
+        unk1d = struct.unpack('<f', header[4:8])[0]
         print(f'         unk1: {unk1a} {unk1b} {unk1c} {unk1d}')
 
         # Find min/max value
@@ -104,7 +99,7 @@ def main():
 
         # Convert raw to picture
         im = PIL.Image.new(mode="RGB", size=(width, height))
-        hm = Heatmap(palette=Palette.RAINBOW)
+        hm = Heatmap(palette=args.palette)
         hm.set_temperature_range(min, max)
         print(f'Second pass, compute picture')
         jpegfile.seek(header_addr + HDRI_HEADER_SIZE, 0)
