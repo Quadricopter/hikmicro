@@ -6,9 +6,11 @@ import math
 
 class Palette(IntEnum):
 
-    GRAYSCALE = 0   # Grayscale
-    RAINBOW = 1     # black-blue-cyan-green-yellow-red
-    IRONBOW = 2     # black-blue-magenta-orange-yellow-white / FLIR
+    WHITEHOT = 0    # black->white
+    BLACKHOT = 1    # white->black
+    REDHOT = 2      # black->white->red
+    RAINBOW = 3     # black-blue-cyan-green-yellow-red
+    IRONBOW = 4     # black-blue-magenta-orange-yellow-white / FLIR
 
 
 class Heatmap():
@@ -25,36 +27,51 @@ class Heatmap():
     def set_palette(self, palette=Palette.RAINBOW):
 
         self.color_map = []
+        self.palette = palette
 
-        if palette == Palette.GRAYSCALE:
+        if palette == Palette.WHITEHOT:
             # RGB(0, 0, 0) -> RGB(255, 255, 255)
-            for value in range(255):
+            for value in range(256):
                 self.color_map.append((value, value, value))
+
+        if palette == Palette.BLACKHOT:
+            # RGB(255, 255, 255) -> RGB(0, 0, 0)
+            for value in range(256):
+                value = 255 - value
+                self.color_map.append((value, value, value))
+
+        if palette == Palette.REDHOT:
+            # RGB(0, 0, 0) -> RGB(255, 255, 255)
+            for value in range(256):
+                self.color_map.append((value, value, value))
+            # RGB(255, 255, 255) -> RGB(255, 0, 0)
+            for value in range(254, 0, -1):
+                self.color_map.append((255, value, value))
 
         if palette == Palette.RAINBOW:
             # Now 100% black
             # Add blue:     RGB(0, 0, 0) -> RGB(0, 0, 255)
-            for blue in range(255):
+            for blue in range(256):
                 self.color_map.append((0, 0, blue))
 
             # Now 100% blue
             # Add green:    RGB(0, 0, 255) -> RGB(0, 255, 255)
-            for green in range(255):
+            for green in range(256):
                 self.color_map.append((0, green, 255))
 
             # Now 100% cyan
             # Remove blue:  RGB(0, 255, 255) -> RGB(0, 255, 0)
-            for blue in range(255):
+            for blue in range(256):
                 self.color_map.append((0, 255, 255 - blue))
 
             # Now 100% green
             # Add red:      RGB(0, 255, 0) -> RGB(255, 255, 0)
-            for red in range(255):
+            for red in range(256):
                 self.color_map.append((red, 255, 0))
 
             # Now 100% yellow
             # remove green: RGB(255, 255, 0) -> RGB(255, 0, 0)
-            for green in range(255):
+            for green in range(256):
                 self.color_map.append((255, 255 - green, 0))
 
             # Now 100% red
@@ -71,15 +88,15 @@ class Heatmap():
                 self.color_map.append((2 * value, 0, 128 + value))
 
             # RGB(255, 0, 255) -> RGB(255, 0, 0)
-            for value in range(0, 255, 2):
+            for value in range(0, 256, 2):
                 self.color_map.append((255, 0, 255 - value))
 
             # RGB(255, 0, 0) -> RGB(255, 255, 0)
-            for value in range(255):
+            for value in range(256):
                 self.color_map.append((255, value, 0))
 
             # RGB(255, 255, 0) -> RGB(255, 255, 255)
-            for value in range(0, 255, 2):
+            for value in range(0, 256, 2):
                 self.color_map.append((255, 255, value))
 
         # print(f'Heatmap color count: {len(self.color_map)} colors')

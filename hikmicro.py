@@ -39,7 +39,7 @@ def main():
                     prog='HIKMICRO Toolkit',
                     description='Extract thermal data from HIKMICRO jpg file')
     parser.add_argument('-j', '--jpeg', required=True)
-    parser.add_argument('-p', '--palette', type=int, default=Palette.GRAYSCALE)
+    parser.add_argument('-p', '--palette', type=int, default=Palette.WHITEHOT)
     args = parser.parse_args()
 
     if args.palette < 0 or args.palette >= len(Palette):
@@ -101,6 +101,7 @@ def main():
         im = PIL.Image.new(mode="RGB", size=(width, height))
         hm = Heatmap(palette=args.palette)
         hm.set_temperature_range(min, max)
+
         print(f'Second pass, compute picture')
         jpegfile.seek(header_addr + HDRI_HEADER_SIZE, 0)
         for y in range(height):
@@ -110,6 +111,8 @@ def main():
                 color = hm.get_rgb_from_temperature(data)
                 im.putpixel(xy=(x, y), value=color)
 
+        im = im.resize(size=(480, 640),
+                       resample=PIL.Image.LANCZOS)
         im.show()
 
     return 0
