@@ -40,6 +40,7 @@ def main():
                     description='Extract thermal data from HIKMICRO jpg file')
     parser.add_argument('-j', '--jpeg', required=True)
     parser.add_argument('-p', '--palette', type=int, default=Palette.WHITEHOT)
+    parser.add_argument('--show', action="store_true")
     args = parser.parse_args()
 
     if args.palette < 0 or args.palette >= len(Palette):
@@ -54,18 +55,6 @@ def main():
             print("'HDRI' header not found")
             return 1
         print(f'HDRI addr: 0x{header_addr:08x}')
-
-# # ---------------------------------------------------------------------------
-# 
-#         for n in range(1024):
-#             # Search this address somewhere in the file
-#             tmp_addr = header_addr - n
-#             byte_addr = tmp_addr.to_bytes(4, 'little')
-#             addr = get_header_address(jpegfile, byte_addr)
-#             if addr > 0:
-#                 print(f'addr: 0x{tmp_addr:08x} -> {addr}')
-# 
-# # ---------------------------------------------------------------------------
 
         # Read 'HDRI' header
         jpegfile.seek(header_addr, 0)
@@ -83,7 +72,7 @@ def main():
         print(f'         unk1: {unk1a} {unk1b} {unk1c} {unk1d}')
 
         # Find min/max value
-        print(f'First pass, compute IR temperature range.', end='')
+        print('First pass, compute temperature range', end='')
         min = 65535
         max = 0
         jpegfile.seek(header_addr + HDRI_HEADER_SIZE, 0)
@@ -98,7 +87,7 @@ def main():
         print(f' -> min: {min}, max: {max}')
 
         # Convert raw to picture
-        print(f'Second pass, compute picture')
+        print('Second pass, compute picture')
         hm = Heatmap(palette=args.palette)
         hm.dump_palette()
         hm.set_temperature_range(min, max)
@@ -114,9 +103,11 @@ def main():
 
         im = im.resize(size=(480, 640),
                        resample=PIL.Image.LANCZOS)
-        im.show()
+        if args.show:
+            im.show()
 
     return 0
+
 
 if __name__ == '__main__':
     main()
