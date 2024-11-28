@@ -98,11 +98,12 @@ def main():
         print(f' -> min: {min}, max: {max}')
 
         # Convert raw to picture
-        im = PIL.Image.new(mode="RGB", size=(width, height))
+        print(f'Second pass, compute picture')
         hm = Heatmap(palette=args.palette)
+        hm.dump_palette()
         hm.set_temperature_range(min, max)
 
-        print(f'Second pass, compute picture')
+        im = PIL.Image.new(mode="RGB", size=(width, height))
         jpegfile.seek(header_addr + HDRI_HEADER_SIZE, 0)
         for y in range(height):
             for x in range(width):

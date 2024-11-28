@@ -2,6 +2,7 @@
 
 from enum import IntEnum
 import math
+from sty import bg
 
 
 class Palette(IntEnum):
@@ -17,6 +18,8 @@ class Heatmap():
 
     DEFAULT_MIN_TEMPERATURE = 20
     DEFAULT_MAX_TEMPERATURE = 40
+    DUMP_PALETTE_MIN_TEMPERATURE = 0
+    DUMP_PALETTE_MAX_TEMPERATURE = 100
 
     def __init__(self, palette=Palette.RAINBOW):
 
@@ -105,7 +108,11 @@ class Heatmap():
 
         self.min_temp = min
         self.max_temp = max
-        print(f'set_temperature_range: [{min:.1f}:{max:.1f}]')
+        # print(f'set_temperature_range: [{min:.1f}:{max:.1f}]')
+
+    def get_temperature_range(self):
+
+        return self.min_temp, self.max_temp
 
     def get_rgb_from_temperature(self, temperature, alpha=1) -> tuple:
 
@@ -128,3 +135,16 @@ class Heatmap():
         color_idx = max(color_idx, 0)
 
         return self.color_map[color_idx]
+
+    def dump_palette(self):
+
+        bkp_min, bkp_max = self.get_temperature_range()
+
+        # RGB sty
+        self.set_temperature_range(self.DUMP_PALETTE_MIN_TEMPERATURE, self.DUMP_PALETTE_MAX_TEMPERATURE)
+        for n in range(self.DUMP_PALETTE_MIN_TEMPERATURE, self.DUMP_PALETTE_MAX_TEMPERATURE, 1):
+            rgb = self.get_rgb_from_temperature(n)
+            print(f'{bg(rgb[0], rgb[1], rgb[2])} ', end='')
+        print(f'{bg.rs}')
+
+        self.set_temperature_range(bkp_min, bkp_max)
