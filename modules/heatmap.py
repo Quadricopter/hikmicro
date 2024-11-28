@@ -78,6 +78,9 @@ class Heatmap():
                 self.color_map.append((255, 255 - green, 0))
 
             # Now 100% red
+            # Go to white: RGB(255, 255, 0) -> RGB(255, 255, 255)
+            for value in range(256):
+                self.color_map.append((255, value, value))
 
         if palette == Palette.IRONBOW:
             # black-blue-magenta-orange-yellow-white / FLIR
