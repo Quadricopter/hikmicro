@@ -1,10 +1,97 @@
+import struct
+import hexdump
 from locale import atof
 
 
 class HikmicroJpeg:
 
-    def __init__(self):
-        pass
+    HEADER_READ_BUFFER_SIZE = 1024
+    HDRI_HEADER_SIZE = 44
+
+    def __init__(self, filename:str):
+
+        self.jpegfile = open(filename, mode='rb')
+
+        # Search 'HDRI' header
+        header_addr = self.__get_header_address(self.jpegfile, b'HDRI')
+        if header_addr < 0:
+            print("'HDRI' header not found")
+            return 1
+        print(f'HDRI addr: 0x{header_addr:08x}')
+
+        # Read 'HDRI' header
+        self.jpegfile.seek(header_addr, 0)
+        header = self.jpegfile.read(self.HDRI_HEADER_SIZE)
+        hexdump.hexdump(header)
+
+        self.width = struct.unpack('<I', header[12:16])[0]
+        self.height = struct.unpack('<I', header[16:20])[0]
+        print(f'[Header] width: {self.width}px, height: {self.height}px')
+
+        unk1a = struct.unpack('<H', header[4:6])[0]
+        unk1b = struct.unpack('<H', header[6:8])[0]
+        unk1c = struct.unpack('<I', header[4:8])[0]
+        unk1d = struct.unpack('<f', header[4:8])[0]
+        print(f'         unk1: {unk1a} {unk1b} {unk1c} {unk1d}')
+
+        # Find min/max value
+        print('Compute range', end='')
+        self.min = 65535
+        self.max = 0
+        self.jpegfile.seek(header_addr + self.HDRI_HEADER_SIZE, 0)
+        for y in range(self.height):
+            for x in range(self.width):
+                data = self.jpegfile.read(2)
+                data = int.from_bytes(data, "little")
+                if data < self.min:
+                    self.min = data
+                if data > self.max:
+                    self.max = data
+        print(f' -> min: {self.min}, max: {self.max}')
+
+        self.jpegfile.seek(header_addr + self.HDRI_HEADER_SIZE, 0)
+#        for y in range(height):
+#            for x in range(width):
+#                data = self.jpegfile.read(2)
+#                data = int.from_bytes(data, "little")
+#                color = hm.get_rgb_from_temperature(data)
+#                im.putpixel(xy=(x, y), value=color)
+
+    def __get_header_address(self, jpeg_file, header):
+
+        pos = -1
+        jpeg_file.seek(0, 0)  # Go back to the begining of the file
+        while True:
+            buff = jpeg_file.read(self.HEADER_READ_BUFFER_SIZE)
+            found = buff.find(header)
+            if found >= 0:
+                pos = jpeg_file.seek(0, 1) - len(buff) + found
+                break
+
+            if len(buff) != self.HEADER_READ_BUFFER_SIZE:
+                break
+
+            # Rewind in case of header split between buffer
+            jpeg_file.seek(-len(header), 1)
+
+        jpeg_file.seek(0, 0)  # Go back to the begining of the file
+
+        return pos
+
+    def get_size(self):
+        return (self.width, self.height)
+
+    def get_range(self):
+        return (self.min, self.max)
+
+    def get_next_temperature_list(self) -> list:
+        temp_list = []
+        for _ in range(self.width):
+            data = self.jpegfile.read(2)
+            data = int.from_bytes(data, "little")
+            temp_list.append(data)
+        return temp_list
+
 
 class HikmicroExportedCsv:
 
@@ -26,7 +113,7 @@ class HikmicroExportedCsv:
                 self.min = self.quote_str_to_float(csv_list[3])
             if line == 14:  # Read min temp
                 self.min = self.quote_str_to_float(csv_list[3])
-#        print(f'CSV min: {self.min}°C, max: {self.max}°C')
+        print(f'CSV range     -> min: {self.min}°C, max: {self.max}°C')
 
     def __read_line(self):
         formated_line = ''
