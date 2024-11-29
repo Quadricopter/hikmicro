@@ -6,6 +6,7 @@ import hexdump
 import PIL
 import PIL.Image
 from modules.heatmap import Heatmap, Palette
+from modules.hikmicro import HikmicroJpeg, HikmicroExportedCsv
 
 HEADER_READ_BUFFER_SIZE = 1024
 HDRI_HEADER_SIZE = 44
@@ -39,6 +40,7 @@ def main():
                     prog='HIKMICRO Toolkit',
                     description='Extract thermal data from HIKMICRO jpg file')
     parser.add_argument('-j', '--jpeg', required=True)
+    parser.add_argument('-c', '--csv')
     parser.add_argument('-p', '--palette', type=int, default=Palette.WHITEHOT)
     parser.add_argument('--show', action="store_true")
     args = parser.parse_args()
@@ -46,6 +48,10 @@ def main():
     if args.palette < 0 or args.palette >= len(Palette):
         print(f'Unsupported palette, must be in [0:{len(Palette)-1}]')
         return 1
+
+    csv = None
+    if args.csv:
+        csv = HikmicroExportedCsv(args.csv)
 
     with open(args.jpeg, mode='rb') as jpegfile:
 
@@ -95,6 +101,9 @@ def main():
         im = PIL.Image.new(mode="RGB", size=(width, height))
         jpegfile.seek(header_addr + HDRI_HEADER_SIZE, 0)
         for y in range(height):
+
+            if csv:
+                temp_list = csv.get_next_temperature_list()
             for x in range(width):
                 data = jpegfile.read(2)
                 data = int.from_bytes(data, "little")
