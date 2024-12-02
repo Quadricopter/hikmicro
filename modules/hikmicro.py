@@ -5,40 +5,60 @@ from locale import atof
 
 class HikmicroJpeg:
 
-    HEADER_READ_BUFFER_SIZE = 1024
+    READ_BUFFER_SIZE = 1024
     HDRI_HEADER_SIZE = 44
+    HIPT_HEADER_SIZE = 196
 
     def __init__(self, filename:str):
 
         self.jpegfile = open(filename, mode='rb')
 
-        # Search 'HDRI' header
-        header_addr = self.__get_header_address(self.jpegfile, b'HDRI')
-        if header_addr < 0:
+        #
+        # 'HDRI' header
+        #
+
+        hdri_addr = self.__get_header_address(self.jpegfile, b'HDRI')
+        if hdri_addr < 0:
             print("'HDRI' header not found")
             return 1
-        print(f'HDRI addr: 0x{header_addr:08x}')
+        print(f'HDRI addr: 0x{hdri_addr:08x}')
 
-        # Read 'HDRI' header
-        self.jpegfile.seek(header_addr, 0)
-        header = self.jpegfile.read(self.HDRI_HEADER_SIZE)
-        hexdump.hexdump(header)
+        self.jpegfile.seek(hdri_addr, 0)
+        hdri_data = self.jpegfile.read(self.HDRI_HEADER_SIZE)
+        # hexdump.hexdump(hdri_data)
 
-        self.width = struct.unpack('<I', header[12:16])[0]
-        self.height = struct.unpack('<I', header[16:20])[0]
+        self.width = struct.unpack('<I', hdri_data[12:16])[0]
+        self.height = struct.unpack('<I', hdri_data[16:20])[0]
         print(f'[Header] width: {self.width}px, height: {self.height}px')
 
-        unk1a = struct.unpack('<H', header[4:6])[0]
-        unk1b = struct.unpack('<H', header[6:8])[0]
-        unk1c = struct.unpack('<I', header[4:8])[0]
-        unk1d = struct.unpack('<f', header[4:8])[0]
-        print(f'         unk1: {unk1a} {unk1b} {unk1c} {unk1d}')
+        #
+        # 'HIPT' header
+        #
+
+        hipt_addr = self.__get_header_address(self.jpegfile, b'HIPT')
+        if hipt_addr < 0:
+            print("'HIPT' header not found")
+            return 1
+        print(f'HIPT addr: 0x{hipt_addr:08x}')
+
+        self.jpegfile.seek(hipt_addr, 0)
+        hipt_data = self.jpegfile.read(self.HIPT_HEADER_SIZE)
+        # hexdump.hexdump(hipt_data)
+
+        self.emmissivity = struct.unpack('<f', hipt_data[40:44])[0]
+        self.environment_temperature = struct.unpack('<f', hipt_data[44:48])[0]
+        self.humidity = struct.unpack('<f', hipt_data[48:52])[0]
+        self.reflection_temperature = struct.unpack('<f', hipt_data[60:64])[0]
+        print(f'Emissivity:  {self.emmissivity:.2f}')
+        print(f'Temperature: {self.environment_temperature:.1f}°C')
+        print(f'Humidity:    {self.humidity:.1f}%')
+        print(f'Reflection:  {self.reflection_temperature:.1f}°C')
 
         # Find min/max value
         print('Compute range', end='')
         self.min = 65535
         self.max = 0
-        self.jpegfile.seek(header_addr + self.HDRI_HEADER_SIZE, 0)
+        self.jpegfile.seek(hdri_addr + self.HDRI_HEADER_SIZE, 0)
         for y in range(self.height):
             for x in range(self.width):
                 data = self.jpegfile.read(2)
@@ -47,28 +67,22 @@ class HikmicroJpeg:
                     self.min = data
                 if data > self.max:
                     self.max = data
-        print(f' -> min: {self.min}, max: {self.max}')
+        self.jpegfile.seek(hdri_addr + self.HDRI_HEADER_SIZE, 0)
 
-        self.jpegfile.seek(header_addr + self.HDRI_HEADER_SIZE, 0)
-#        for y in range(height):
-#            for x in range(width):
-#                data = self.jpegfile.read(2)
-#                data = int.from_bytes(data, "little")
-#                color = hm.get_rgb_from_temperature(data)
-#                im.putpixel(xy=(x, y), value=color)
+        print(f' -> min: {self.min}, max: {self.max}')
 
     def __get_header_address(self, jpeg_file, header):
 
         pos = -1
         jpeg_file.seek(0, 0)  # Go back to the begining of the file
         while True:
-            buff = jpeg_file.read(self.HEADER_READ_BUFFER_SIZE)
+            buff = jpeg_file.read(self.READ_BUFFER_SIZE)
             found = buff.find(header)
             if found >= 0:
                 pos = jpeg_file.seek(0, 1) - len(buff) + found
                 break
 
-            if len(buff) != self.HEADER_READ_BUFFER_SIZE:
+            if len(buff) != self.READ_BUFFER_SIZE:
                 break
 
             # Rewind in case of header split between buffer
