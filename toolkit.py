@@ -15,6 +15,8 @@ def main():
     parser.add_argument('-j', '--jpeg', required=True)
     parser.add_argument('-c', '--csv')
     parser.add_argument('-p', '--palette', type=int, default=Palette.WHITEHOT)
+    parser.add_argument('-m', '--min', type=int)
+    parser.add_argument('-M', '--max', type=int)
     parser.add_argument('--show', action="store_true")
     args = parser.parse_args()
 
@@ -34,7 +36,13 @@ def main():
     hm = Heatmap(palette=args.palette)
     hm.dump_palette()
     temp_range = jpeg.get_range()
-    hm.set_temperature_range(temp_range[0], temp_range[1])
+    min_temp = temp_range[0]
+    max_temp = temp_range[1]
+    if args.min is not None:
+        min_temp = args.min
+    if args.max:
+        max_temp = args.max
+    hm.set_temperature_range(min_temp, max_temp)
 
     # Create image
     image_size = jpeg.get_size()
