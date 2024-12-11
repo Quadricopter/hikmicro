@@ -71,10 +71,12 @@ class HikmicroJpeg:
 
         print(f' -> min: {self.min}, max: {self.max}')
 
-    def __get_header_address(self, jpeg_file, header):
+    def __get_header_address(self, jpeg_file, header:bytearray, start_address=0):
 
         pos = -1
-        jpeg_file.seek(0, 0)  # Go back to the begining of the file
+        seek_mem = jpeg_file.seek(0, 1)  # Store current file position
+
+        jpeg_file.seek(start_address, 0)
         while True:
             buff = jpeg_file.read(self.READ_BUFFER_SIZE)
             found = buff.find(header)
@@ -88,7 +90,7 @@ class HikmicroJpeg:
             # Rewind in case of header split between buffer
             jpeg_file.seek(-len(header), 1)
 
-        jpeg_file.seek(0, 0)  # Go back to the begining of the file
+        jpeg_file.seek(seek_mem, 0)  # Restore file position
 
         return pos
 
