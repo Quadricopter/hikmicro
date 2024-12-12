@@ -127,8 +127,8 @@ class HikmicroExportedCsv:
                 self.emissivity = self.quote_str_to_float(csv_list[3])
             if line == 14:  # Read min temp
                 self.min = self.quote_str_to_float(csv_list[3])
-            if line == 14:  # Read min temp
-                self.min = self.quote_str_to_float(csv_list[3])
+            if line == 15:  # Read max temp
+                self.max = self.quote_str_to_float(csv_list[3])
         print(f'CSV range     -> min: {self.min}°C, max: {self.max}°C')
 
     def __read_line(self):
