@@ -3,6 +3,7 @@
 import argparse
 import PIL
 import PIL.Image
+import json
 from modules.heatmap import Heatmap, Palette
 from modules.hikmicro import HikmicroJpeg, HikmicroExportedCsv
 
@@ -12,13 +13,14 @@ def main():
     parser = argparse.ArgumentParser(
                     prog='HIKMICRO Toolkit',
                     description='Extract thermal data from HIKMICRO jpg file')
-    parser.add_argument('-j', '--jpeg', required=True)
-    parser.add_argument('-c', '--csv')
-    parser.add_argument('-p', '--palette', type=int, default=Palette.WHITEHOT)
-    parser.add_argument('-m', '--min', type=int)
-    parser.add_argument('-M', '--max', type=int)
-    parser.add_argument('-o', '--output')
-    parser.add_argument('--show', action="store_true")
+    parser.add_argument('--jpeg', required=True, help='HIKMICRO JPEG radiometric file')
+    parser.add_argument('--csv', help="CSV exported from HIKMICRO Analyser")
+    parser.add_argument('--palette', help=f'Palette selection [0:{len(Palette)-1}]', type=int, default=Palette.WHITEHOT)
+    parser.add_argument('--min', help='Force min temperature', type=int)
+    parser.add_argument('--max', help='Force max temperature', type=int)
+    parser.add_argument('--output', help='Output file')
+    parser.add_argument('--json', help='Export file info as json file')
+    parser.add_argument('--show', help='Preview exported picture', action="store_true")
     args = parser.parse_args()
 
     if args.palette < 0 or args.palette >= len(Palette):
@@ -32,6 +34,23 @@ def main():
     csv = None
     if args.csv:
         csv = HikmicroExportedCsv(args.csv)
+
+    # Export json
+    if args.json:
+        with open(args.json, "w") as json_file:
+            json_dict = {
+                'emissivity': jpeg.emissivity,
+                'reflection_temperature': jpeg.reflection_temperature,
+                'internal': {
+                    'temperature': jpeg.environment_temperature,
+                    'humidity': jpeg.humidity,
+                },
+                'size': {
+                    'width': jpeg.get_size()[0],
+                    'heigth': jpeg.get_size()[1]
+                }
+            }
+            json_file.write(json.dumps(json_dict, indent=4))
 
     # Create palette
     hm = Heatmap(palette=args.palette)

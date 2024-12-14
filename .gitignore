@@ -6,4 +6,6 @@ __pycache__
 *.csv
 *.gp
 *.pdf
+*.json
 data
+batch.sh

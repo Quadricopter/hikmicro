@@ -11,63 +11,63 @@ class HikmicroJpeg:
 
     def __init__(self, filename:str):
 
-        self.jpegfile = open(filename, mode='rb')
+        self._jpegfile = open(filename, mode='rb')
 
         #
         # 'HDRI' header
         #
 
-        hdri_addr = self.__get_header_address(self.jpegfile, b'HDRI')
+        hdri_addr = self.__get_header_address(self._jpegfile, b'HDRI')
         if hdri_addr < 0:
             print("'HDRI' header not found")
             return 1
         print(f'HDRI addr: 0x{hdri_addr:08x}')
 
-        self.jpegfile.seek(hdri_addr, 0)
-        hdri_data = self.jpegfile.read(self.HDRI_HEADER_SIZE)
+        self._jpegfile.seek(hdri_addr, 0)
+        hdri_data = self._jpegfile.read(self.HDRI_HEADER_SIZE)
         # hexdump.hexdump(hdri_data)
 
-        self.width = struct.unpack('<I', hdri_data[12:16])[0]
-        self.height = struct.unpack('<I', hdri_data[16:20])[0]
-        print(f'[Header] width: {self.width}px, height: {self.height}px')
+        self._width = struct.unpack('<I', hdri_data[12:16])[0]
+        self._height = struct.unpack('<I', hdri_data[16:20])[0]
+        print(f'[Header] width: {self._width}px, height: {self._height}px')
 
         #
         # 'HIPT' header
         #
 
-        hipt_addr = self.__get_header_address(self.jpegfile, b'HIPT')
+        hipt_addr = self.__get_header_address(self._jpegfile, b'HIPT')
         if hipt_addr < 0:
             print("'HIPT' header not found")
             return 1
         print(f'HIPT addr: 0x{hipt_addr:08x}')
 
-        self.jpegfile.seek(hipt_addr, 0)
-        hipt_data = self.jpegfile.read(self.HIPT_HEADER_SIZE)
+        self._jpegfile.seek(hipt_addr, 0)
+        hipt_data = self._jpegfile.read(self.HIPT_HEADER_SIZE)
         # hexdump.hexdump(hipt_data)
 
-        self.emmissivity = struct.unpack('<f', hipt_data[40:44])[0]
-        self.environment_temperature = struct.unpack('<f', hipt_data[44:48])[0]
-        self.humidity = struct.unpack('<f', hipt_data[48:52])[0]
-        self.reflection_temperature = struct.unpack('<f', hipt_data[60:64])[0]
-        print(f'Emissivity:  {self.emmissivity:.2f}')
-        print(f'Temperature: {self.environment_temperature:.1f}°C')
-        print(f'Humidity:    {self.humidity:.1f}%')
-        print(f'Reflection:  {self.reflection_temperature:.1f}°C')
+        self._emissivity = struct.unpack('<f', hipt_data[40:44])[0]
+        self._environment_temperature = struct.unpack('<f', hipt_data[44:48])[0]
+        self._humidity = struct.unpack('<f', hipt_data[48:52])[0]
+        self._reflection_temperature = struct.unpack('<f', hipt_data[60:64])[0]
+        print(f'Emissivity:  {self._emissivity:.2f}')
+        print(f'Temperature: {self._environment_temperature:.1f}°C')
+        print(f'Humidity:    {self._humidity:.1f}%')
+        print(f'Reflection:  {self._reflection_temperature:.1f}°C')
 
         # Find min/max value
         print('Compute range', end='')
         self.min = 65535
         self.max = 0
-        self.jpegfile.seek(hdri_addr + self.HDRI_HEADER_SIZE, 0)
-        for y in range(self.height):
-            for x in range(self.width):
-                data = self.jpegfile.read(2)
+        self._jpegfile.seek(hdri_addr + self.HDRI_HEADER_SIZE, 0)
+        for y in range(self._height):
+            for x in range(self._width):
+                data = self._jpegfile.read(2)
                 data = int.from_bytes(data, "little")
                 if data < self.min:
                     self.min = data
                 if data > self.max:
                     self.max = data
-        self.jpegfile.seek(hdri_addr + self.HDRI_HEADER_SIZE, 0)
+        self._jpegfile.seek(hdri_addr + self.HDRI_HEADER_SIZE, 0)
 
         print(f' -> min: {self.min}, max: {self.max}')
 
@@ -95,18 +95,34 @@ class HikmicroJpeg:
         return pos
 
     def get_size(self):
-        return (self.width, self.height)
+        return (self._width, self._height)
 
     def get_range(self):
         return (self.min, self.max)
 
     def get_next_temperature_list(self) -> list:
         temp_list = []
-        for _ in range(self.width):
-            data = self.jpegfile.read(2)
+        for _ in range(self._width):
+            data = self._jpegfile.read(2)
             data = int.from_bytes(data, "little")
             temp_list.append(data)
         return temp_list
+
+    @property
+    def emissivity(self):
+        return self._emissivity
+
+    @property
+    def environment_temperature(self):
+        return self._environment_temperature
+
+    @property
+    def humidity(self):
+        return self._humidity
+
+    @property
+    def reflection_temperature(self):
+        return self._reflection_temperature
 
 
 class HikmicroExportedCsv:
