@@ -17,6 +17,7 @@ def main():
     parser.add_argument('-p', '--palette', type=int, default=Palette.WHITEHOT)
     parser.add_argument('-m', '--min', type=int)
     parser.add_argument('-M', '--max', type=int)
+    parser.add_argument('-o', '--output')
     parser.add_argument('--show', action="store_true")
     args = parser.parse_args()
 
@@ -44,20 +45,35 @@ def main():
         max_temp = args.max
     hm.set_temperature_range(min_temp, max_temp)
 
-    # Create image
     image_size = jpeg.get_size()
-    im = PIL.Image.new(mode="RGB", size=(image_size[0], image_size[1]))
+    if not csv:
+        # Create image
+        im = PIL.Image.new(mode="RGB", size=(image_size[0], image_size[1]))
 
-    for y in range(image_size[1]):
-        jpeg_temp_list = jpeg.get_next_temperature_list()
-        for x in range(image_size[0]):
-            color = hm.get_rgb_from_temperature(jpeg_temp_list[x])
-            im.putpixel(xy=(x, y), value=color)
+        for y in range(image_size[1]):
+            jpeg_temp_list = jpeg.get_next_temperature_list()
+            for x in range(image_size[0]):
+                color = hm.get_rgb_from_temperature(jpeg_temp_list[x])
+                im.putpixel(xy=(x, y), value=color)
 
-    im = im.resize(size=(480, 640),
-                    resample=PIL.Image.LANCZOS)
-    if args.show:
-        im.show()
+        im = im.resize(size=(480, 640),
+                        resample=PIL.Image.LANCZOS)
+        if args.show:
+            im.show()
+        if args.output:
+            im.save(args.output)
+
+    else:
+        # Create jpeg vs csv diff
+        if args.output is not None:
+            with open(args.output, "w") as output_file:
+                for y in range(image_size[1]):
+                    jpeg_temp_list = jpeg.get_next_temperature_list()
+                    csv_temp_list = csv.get_next_temperature_list()
+                    for x in range(image_size[0]):
+                        color_16bit = jpeg_temp_list[x]
+                        color_degree = csv_temp_list[x]
+                        output_file.write(f'{color_16bit},{color_degree}\n')
 
 
 if __name__ == '__main__':
