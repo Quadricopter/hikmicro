@@ -47,7 +47,7 @@ def main():
                 },
                 'size': {
                     'width': jpeg.get_size()[0],
-                    'heigth': jpeg.get_size()[1]
+                    'height': jpeg.get_size()[1]
                 }
             }
             json_file.write(json.dumps(json_dict, indent=4))
